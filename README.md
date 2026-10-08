@@ -1,75 +1,78 @@
 # CV BTL2 — Gradient Domain Editing & Panoramic Image Stitching
 
-Repo dùng chung cho cả 3 phần của bài tập lớn (xem `docs/CV-project-2.pdf` và
-`docs/HD-BTL-CV.pdf` cho đề bài gốc và hướng dẫn báo cáo chung của môn học).
+Shared repository for all 3 parts of the assignment (see `docs/CV-project-2.pdf`
+and `docs/HD-BTL-CV.pdf` for the original assignment and the course's general
+report guidelines).
 
-## Phân công & chủ sở hữu từng phần
+## Task assignment & ownership
 
-| Phần | Nội dung | Thư mục code chính | Người phụ trách |
+| Part | Content | Main code directory | Owner |
 |---|---|---|---|
-| 1 | Gradient Domain Editing (Poisson blending) | `src/gradient_domain/` | (bạn) |
-| 2 | Core pipeline stitching + SIFT | `src/stitching/` | Thành viên B |
-| 3 | Pipeline của Phần 2 + ORB/SURF + so sánh | `src/stitching/` (chỉ đổi `--detector`) | Thành viên C |
+| 1 | Gradient Domain Editing (Poisson blending) | `src/gradient_domain/` | Tri Pham Thanh |
+| 2 | Core stitching pipeline + SIFT | `src/stitching/` | Khiem Ton Vo Hoai |
+| 3 | Part 2 pipeline + ORB/SURF + comparison | `src/stitching/` (only changes `--detector`) | Khoa Nguyen Dang |
 
-**Quan trọng với Phần 2 & 3:** cả hai dùng chung một pipeline
-(`src/stitching/pipeline.py`). Phần 2 build pipeline này và chạy với SIFT;
-Phần 3 **không viết lại pipeline**, chỉ truyền `--detector orb` (hoặc thêm
-detector mới vào `detectors.py`) rồi chạy lại. Nếu Phần 3 thấy cần sửa
-`pipeline.py` để ORB chạy đúng, nghĩa là pipeline chưa thực sự
-detector-agnostic — báo lại cho Phần 2 để sửa chung, đừng fork riêng.
+**Important for Parts 2 & 3:** both share the same pipeline
+(`src/stitching/pipeline.py`). Part 2 builds this pipeline and runs it with
+SIFT; Part 3 **does not rewrite the pipeline**, it only passes
+`--detector orb` (or adds a new detector to `detectors.py`) and reruns. If
+Part 3 needs to modify `pipeline.py` for ORB to work correctly, that means
+the pipeline is not actually detector-agnostic — this should be reported back
+to Part 2 to fix in the shared code rather than forked separately.
 
-> **Lưu ý về SURF:** build OpenCV hiện tại (`opencv-python` chuẩn, không phải
-> `opencv-contrib-python` bản `nonfree`) không có `cv2.xfeatures2d`, nên SURF
-> **không chạy được** trừ khi tự build OpenCV với cờ `OPENCV_ENABLE_NONFREE`.
-> `detectors.py` vẫn khai báo `SURFDetector` nhưng sẽ raise lỗi rõ ràng nếu
-> gọi tới. Yêu cầu đề bài chỉ cần **ít nhất 2 phương pháp** — SIFT + ORB đã
-> đủ. Nếu nhóm vẫn muốn có SURF, cần cài `opencv-contrib-python` phiên bản
-> cũ (<4.3, trước khi SURF bị patent-lock ra khỏi free build) hoặc build từ
-> source.
+> **Note on SURF:** the current OpenCV build (standard `opencv-python`, not
+> the `nonfree` build of `opencv-contrib-python`) does not include
+> `cv2.xfeatures2d`, so SURF **cannot run** unless OpenCV is built from source
+> with the `OPENCV_ENABLE_NONFREE` flag. `detectors.py` still declares
+> `SURFDetector` but raises a clear error if called. The assignment only
+> requires **at least 2 methods** — SIFT + ORB is sufficient. If SURF is
+> still desired, an older `opencv-contrib-python` version (<4.3, before SURF
+> was patent-locked out of the free build) needs to be installed, or built
+> from source.
 
-## Cấu trúc thư mục
+## Directory structure
 
 ```
 BTL2/
-├── docs/                          # Đề bài gốc + hướng dẫn chung (không sửa)
+├── docs/                          # Original assignment + course guidelines (do not modify)
 ├── data/
 │   ├── gradient_domain/
-│   │   ├── sample/                # Ảnh tổng hợp (synthetic) để test thuật toán Poisson — đã có sẵn
-│   │   └── real/                  # <-- Bỏ ảnh nền + ảnh nguồn thật của bạn vào đây
+│   │   ├── sample/                # Synthetic images for testing the Poisson algorithm — already included
+│   │   └── real/                  # <-- Real background/source images go here
 │   └── stitching/
-│       ├── sample_synthetic/      # Bộ ảnh tổng hợp để validate pipeline trước khi có ảnh thật
-│       ├── member2_set/           # <-- Bộ ảnh tự chụp của người làm Phần 2
-│       └── member3_set/           # <-- Bộ ảnh tự chụp của người làm Phần 3
+│       ├── sample_synthetic/      # Synthetic image set to validate the pipeline before real photos are available
+│       ├── member2_set/           # <-- Self-captured photo set for Part 2
+│       └── member3_set/           # <-- Self-captured photo set for Part 3
 ├── src/
-│   ├── gradient_domain/           # PHẦN 1 — Poisson blending
-│   │   ├── io_utils.py            # Đọc/ghi ảnh, chuẩn hóa float [0,1] <-> uint8
-│   │   ├── mask_tool.py           # Công cụ vẽ mask tương tác bằng chuột (polygon)
-│   │   ├── naive_blend.py         # Ghép trực tiếp (copy-paste) — baseline để so sánh
-│   │   ├── poisson_blend.py       # Thuật toán Poisson/gradient-domain blending (cốt lõi)
-│   │   ├── generate_synthetic.py  # Sinh ảnh nền/nguồn/mask tổng hợp để test khi chưa có ảnh thật
-│   │   └── run_pipeline.py        # CLI: chạy naive + poisson, xuất ảnh so sánh side-by-side
-│   └── stitching/                 # PHẦN 2 + 3 — dùng chung
-│       ├── detectors.py           # Registry các detector (SIFT/ORB/SURF) — nơi DUY NHẤT cần sửa để thêm/đổi phương pháp
-│       ├── pipeline.py            # Pipeline detector-agnostic: preprocess -> match -> homography -> warp -> blend
-│       ├── metrics.py             # Thu thập số liệu so sánh (số keypoint, tỉ lệ inlier, reproj. error, thời gian)
-│       ├── generate_synthetic_scene.py  # Sinh bộ ảnh tổng hợp nhiều góc nhìn để validate pipeline
+│   ├── gradient_domain/           # PART 1 — Poisson blending
+│   │   ├── io_utils.py            # Image read/write, float [0,1] <-> uint8 normalization
+│   │   ├── mask_tool.py           # Interactive mouse-based mask drawing tool (polygon)
+│   │   ├── naive_blend.py         # Direct copy-paste blending — baseline for comparison
+│   │   ├── poisson_blend.py       # Poisson/gradient-domain blending algorithm (core)
+│   │   ├── generate_synthetic.py  # Generates synthetic background/source/mask images for testing before real photos exist
+│   │   └── run_pipeline.py        # CLI: runs naive + poisson, outputs a side-by-side comparison image
+│   └── stitching/                 # PARTS 2 + 3 — shared
+│       ├── detectors.py           # Detector registry (SIFT/ORB/SURF) — the ONLY place to edit to add/change methods
+│       ├── pipeline.py            # Detector-agnostic pipeline: preprocess -> match -> homography -> warp -> blend
+│       ├── metrics.py             # Collects comparison metrics (keypoint count, inlier ratio, reprojection error, timing)
+│       ├── generate_synthetic_scene.py  # Generates a multi-view synthetic image set to validate the pipeline
 │       └── run_stitch.py          # CLI: python -m src.stitching.run_stitch --images ... --detector sift|orb
-├── results/                        # Output ảnh/báo cáo trung gian (bị gitignore, tự chạy lại để tái tạo)
+├── results/                        # Intermediate image/report output (gitignored, reproducible by rerunning)
 │   ├── gradient_domain/
 │   └── stitching/
-├── report/                         # Nội dung soạn sẵn cho từng mục báo cáo chung (2.1 → 3)
-│   ├── section_2_1_gradient_theory.md     # Phần 1 viết
-│   ├── section_2_2_stitching_theory.md    # Phần 2 viết (lý thuyết pipeline)
-│   ├── section_2_2_stitching_results.md   # Phần 3 viết (bảng so sánh thực nghiệm)
-│   ├── section_3_gradient_analysis.md     # Phần 1 viết
-│   ├── section_3_stitching_analysis.md    # Phần 2+3 viết chung
-│   └── figures/                           # Ảnh minh họa chèn vào báo cáo LaTeX/PDF cuối
-├── notebooks/                      # (tùy chọn) notebook Colab để demo/export PDF
+├── report/                         # Drafted content for each shared report section (2.1 → 3)
+│   ├── section_2_1_gradient_theory.md     # Written by Part 1
+│   ├── section_2_2_stitching_theory.md    # Written by Part 2 (pipeline theory)
+│   ├── section_2_2_stitching_results.md   # Written by Part 3 (experimental comparison table)
+│   ├── section_3_gradient_analysis.md     # Written by Part 1
+│   ├── section_3_stitching_analysis.md    # Written jointly by Parts 2+3
+│   └── figures/                           # Illustrations inserted into the final LaTeX/PDF report
+├── notebooks/                      # (optional) Colab notebook for demo/PDF export
 ├── requirements.txt
 └── .gitignore
 ```
 
-## Cài đặt môi trường
+## Environment setup
 
 ```bash
 python -m venv .venv
@@ -78,19 +81,19 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-Đã kiểm tra trên môi trường chung: `opencv-python 4.13`, SIFT và ORB chạy
-được out-of-the-box (không cần `opencv-contrib-python`).
+Verified on the shared environment: `opencv-python 4.13`, SIFT and ORB run
+out-of-the-box (no `opencv-contrib-python` required).
 
-## Cách chạy — Phần 1 (Gradient Domain Editing)
+## Usage — Part 1 (Gradient Domain Editing)
 
 ```bash
-# 1. (một lần) sinh ảnh tổng hợp để test thuật toán trước khi có ảnh thật
+# 1. (once) generate synthetic images to test the algorithm before real photos exist
 python -m src.gradient_domain.generate_synthetic
 
-# 2. (khi có ảnh thật) vẽ mask tương tác trên ảnh nguồn
+# 2. (once real photos are available) draw an interactive mask on the source image
 python -m src.gradient_domain.mask_tool --source data/gradient_domain/real/source.jpg --out data/gradient_domain/real/mask.png
 
-# 3. chạy blend + so sánh naive vs Poisson
+# 3. run blending + compare naive vs Poisson
 python -m src.gradient_domain.run_pipeline \
     --background data/gradient_domain/real/background.jpg \
     --source data/gradient_domain/real/source.jpg \
@@ -99,61 +102,57 @@ python -m src.gradient_domain.run_pipeline \
     --out results/gradient_domain/compare.png
 ```
 
-`generate_synthetic.py` sinh ra 3 bộ ảnh test đã kiểm chứng, dùng được ngay
-cho báo cáo trong lúc chưa có ảnh thật:
+`generate_synthetic.py` produces 3 verified test sets, usable right away for
+the report while real photos are not yet available:
 
-| Bộ ảnh | Mục đích |
+| Image set | Purpose |
 |---|---|
-| `sample/{background,source,mask}.png` | Demo chính: nền source/target cùng tông xanh nhưng khác độ sáng → naive paste lộ seam rõ, Poisson blend xóa seam và vẫn giữ đúng màu vật thể |
-| `sample/mask_loose.png` (dùng thay cho `mask.png`) | Mask rộng hơn nhiều so với vật thể → minh họa ảnh hưởng của kích thước mask (mục 2.5): mask càng rộng, Poisson càng "kéo" nhiều nền phẳng vào vùng giải, dễ để lại viền/halo |
-| `sample/challenging/{background,source,mask}.png` | Nền source lệch hẳn tông màu (cam/vàng) so với target (xanh) gần như bù màu → vật thể bị đổi hẳn tông màu sau Poisson blend. Ví dụ minh họa **hạn chế** của phương pháp khi 2 ảnh có ánh sáng/tông màu quá khác biệt |
+| `sample/{background,source,mask}.png` | Main demo: source/target backgrounds share the same blue tone but differ in brightness → naive paste shows a clear seam, Poisson blending removes the seam while preserving the object's color |
+| `sample/mask_loose.png` (used in place of `mask.png`) | A mask much larger than the object → illustrates the effect of mask size (section 2.5): the looser the mask, the more flat background gets pulled into the solved region, which can leave a visible edge/halo |
+| `sample/challenging/{background,source,mask}.png` | Source background has a strongly different color tone (orange/yellow) from the target (blue), close to complementary → the object's color tone shifts noticeably after Poisson blending. Illustrates a **limitation** of the method when the two images have very different lighting/color tones |
 
-Lưu ý lý thuyết quan trọng đã rút ra khi làm test: Poisson blending chỉ giữ
-được *gradient* của source, không giữ được màu tuyệt đối — nên (a) vùng vật
-thể phải có texture/gradient nội bộ thật sự (tô màu đặc tuyệt đối sẽ bị "bốc
-hơi" thành nội suy biên), và (b) nếu màu nền quanh vật thể ở ảnh nguồn khác
-quá xa màu nền đích, điều kiện biên sẽ kéo lệch cả vùng theo tông màu đích.
+Key theoretical observation from testing: Poisson blending only preserves the
+*gradient* of the source, not its absolute color — so (a) the object region
+must have real internal texture/gradient (a flat, solid-colored fill will
+"evaporate" into a boundary interpolation), and (b) if the source background
+color around the object differs greatly from the target background color,
+the boundary condition will pull the whole region toward the target's tone.
 
-## Cách chạy — Phần 2 / Phần 3 (Stitching)
+## Usage — Parts 2 / 3 (Stitching)
 
 ```bash
-# (một lần) sinh bộ ảnh tổng hợp để validate pipeline
+# (once) generate a synthetic image set to validate the pipeline
 python -m src.stitching.generate_synthetic_scene
 
-# Phần 2 — SIFT
+# Part 2 — SIFT
 python -m src.stitching.run_stitch --images "data/stitching/sample_synthetic/*.png" --detector sift --out results/stitching/sift_synthetic.jpg
 
-# Phần 3 — chỉ đổi --detector, pipeline giữ nguyên
+# Part 3 — only changes --detector, pipeline stays the same
 python -m src.stitching.run_stitch --images "data/stitching/sample_synthetic/*.png" --detector orb --out results/stitching/orb_synthetic.jpg
 
-# Chạy trên bộ ảnh tự chụp của từng người tương tự, chỉ đổi --images
+# Run on each member's self-captured image set the same way, only changing --images
 python -m src.stitching.run_stitch --images "data/stitching/member2_set/*.jpg" --detector sift --out results/stitching/sift_member2.jpg
 python -m src.stitching.run_stitch --images "data/stitching/member2_set/*.jpg" --detector orb  --out results/stitching/orb_member2.jpg
 ```
 
-Thêm `--metrics-out results/stitching/metrics.csv` để ghi số liệu (số
-keypoint, số match, tỉ lệ inlier, reprojection error, thời gian từng bước)
-phục vụ bảng so sánh ở mục 2.2 của báo cáo — mỗi lần chạy sẽ append thêm một
-dòng vào CSV đó, nên chạy đủ cả 2 detector trên đủ các bộ ảnh rồi mở file ra
-tổng hợp bảng.
+Add `--metrics-out results/stitching/metrics.csv` to record metrics (keypoint
+count, match count, inlier ratio, reprojection error, per-step timing) for
+the comparison table in report section 2.2 — each run appends a row to that
+CSV, so running both detectors on all image sets and then opening the file
+gives the full comparison table.
 
-## Quy trình làm việc chung (git)
+## Shared git workflow
 
-1. Người tổng hợp (bạn) `git init` + push repo khung này lên remote trước.
-2. Mỗi thành viên clone về, tạo nhánh riêng: `part1-gradient`,
-   `part2-sift`, `part3-orb-compare`.
-3. Chỉ sửa trong thư mục/file thuộc phần mình (xem bảng phân công ở trên) để
-   tránh conflict — đặc biệt Phần 2 & 3 cùng đụng `src/stitching/`, nên trao
-   đổi trước khi sửa `pipeline.py`/`detectors.py`.
-4. Review chéo code nhau qua Pull Request trước khi merge vào `main`.
-5. Mục "Nhận xét/Thảo luận" và "Kết luận" trong báo cáo viết chung sau khi cả
-   3 phần có kết quả — để trong `report/section_4_discussion.md` và
-   `report/section_5_conclusion.md` (tạo khi tới lúc viết).
-
-## Trạng thái hiện tại
-
-- [x] Khung repo + pipeline stitching detector-agnostic (SIFT + ORB chạy được)
-- [x] Phần 1: Poisson blending hiện thực đầy đủ, đã test với ảnh tổng hợp
-- [ ] Ảnh thật (background/source cho Phần 1; 3-4 ảnh mỗi góc cho Phần 2/3) — **mỗi người tự bổ sung vào `data/`**
-- [ ] Bảng so sánh thực nghiệm cuối cùng (Phần 3) — cần chạy trên ảnh thật
-- [ ] Báo cáo LaTeX tổng hợp cuối cùng
+1. The repository maintainer runs `git init` and pushes this base repo to the
+   remote first.
+2. Each member clones the repo and creates their own branch:
+   `part1-gradient`, `part2-sift`, `part3-orb-compare`.
+3. Only files/directories within one's own part should be modified (see the
+   assignment table above) to avoid conflicts — Parts 2 & 3 in particular both
+   touch `src/stitching/`, so coordination is needed before modifying
+   `pipeline.py`/`detectors.py`.
+4. Code should be cross-reviewed via Pull Request before merging into `main`.
+5. The "Discussion" and "Conclusion" sections of the report are written
+   jointly once all 3 parts have results — in
+   `report/section_4_discussion.md` and `report/section_5_conclusion.md`
+   (created when it's time to write them).
