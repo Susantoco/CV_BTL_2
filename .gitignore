@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# Generated outputs (re-creatable by running the scripts) — keep repo light.
+# If you want specific result images in the report, copy them into report/figures/ instead.
+results/**/*.png
+results/**/*.jpg
+!results/**/.gitkeep
