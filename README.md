@@ -37,8 +37,9 @@ BTL2/
 ├── docs/                          # Original assignment + course guidelines (do not modify)
 ├── data/
 │   ├── gradient_domain/
-│   │   ├── sample/                # Synthetic images for testing the Poisson algorithm — already included
-│   │   └── real/                  # <-- Real background/source images go here
+│   │   ├── raw/                   # Real background/source photos — fish.jpg (source), water.jpg (background)
+│   │   ├── mask/                  # Masks matching images in raw/, drawn with mask_tool.py — fish.png
+│   │   └── edgecase/              # Synthetic test sets for the Poisson algorithm — already included
 │   └── stitching/
 │       ├── sample_synthetic/      # Synthetic image set to validate the pipeline before real photos are available
 │       ├── member2_set/           # <-- Self-captured photo set for Part 2
@@ -87,29 +88,39 @@ out-of-the-box (no `opencv-contrib-python` required).
 ## Usage — Part 1 (Gradient Domain Editing)
 
 ```bash
-# 1. (once) generate synthetic images to test the algorithm before real photos exist
+# 1. (once) generate synthetic edge-case images to test the algorithm before real photos exist
 python -m src.gradient_domain.generate_synthetic
 
-# 2. (once real photos are available) draw an interactive mask on the source image
-python -m src.gradient_domain.mask_tool --source data/gradient_domain/real/source.jpg --out data/gradient_domain/real/mask.png
+# 2. draw an interactive mask on the source image (outlines the object to cut out)
+#    left click: add polygon point, right click: undo point, c: close polygon, s: save, q: quit
+python -m src.gradient_domain.mask_tool --source data/gradient_domain/raw/fish.jpg --out data/gradient_domain/mask/fish.png
 
 # 3. run blending + compare naive vs Poisson
 python -m src.gradient_domain.run_pipeline \
-    --background data/gradient_domain/real/background.jpg \
-    --source data/gradient_domain/real/source.jpg \
-    --mask data/gradient_domain/real/mask.png \
-    --offset 50 80 \
-    --out results/gradient_domain/compare.png
+    --background data/gradient_domain/raw/water.jpg \
+    --source data/gradient_domain/raw/fish.jpg \
+    --mask data/gradient_domain/mask/fish.png \
+    --offset 300 100 \
+    --out results/gradient_domain/real_compare.png
 ```
 
-`generate_synthetic.py` produces 3 verified test sets, usable right away for
-the report while real photos are not yet available:
+Current real data set: `raw/fish.jpg` is the source (a fish, cut out via
+`mask/fish.png`), `raw/water.jpg` is the background it gets pasted into.
+`--offset 300 100` places the fish inside the underwater region of
+`water.jpg` (image is 436x640, fish crop is 218x129) — adjust the two
+numbers (`OY OX`, top-left corner in pixels) if a different position is
+wanted. The command above produces `results/gradient_domain/real_compare.png`
+(side-by-side background/source/naive/Poisson) plus the two individual
+results `real_compare_naive.png` and `real_compare_poisson.png`.
+
+`generate_synthetic.py` produces 3 verified test sets under `edgecase/`,
+usable right away for the report regardless of real photos:
 
 | Image set | Purpose |
 |---|---|
-| `sample/{background,source,mask}.png` | Main demo: source/target backgrounds share the same blue tone but differ in brightness → naive paste shows a clear seam, Poisson blending removes the seam while preserving the object's color |
-| `sample/mask_loose.png` (used in place of `mask.png`) | A mask much larger than the object → illustrates the effect of mask size (section 2.5): the looser the mask, the more flat background gets pulled into the solved region, which can leave a visible edge/halo |
-| `sample/challenging/{background,source,mask}.png` | Source background has a strongly different color tone (orange/yellow) from the target (blue), close to complementary → the object's color tone shifts noticeably after Poisson blending. Illustrates a **limitation** of the method when the two images have very different lighting/color tones |
+| `edgecase/{background,source,mask}.png` | Main demo: source/target backgrounds share the same blue tone but differ in brightness → naive paste shows a clear seam, Poisson blending removes the seam while preserving the object's color |
+| `edgecase/mask_loose.png` (used in place of `mask.png`) | A mask much larger than the object → illustrates the effect of mask size (section 2.5): the looser the mask, the more flat background gets pulled into the solved region, which can leave a visible edge/halo |
+| `edgecase/challenging/{background,source,mask}.png` | Source background has a strongly different color tone (orange/yellow) from the target (blue), close to complementary → the object's color tone shifts noticeably after Poisson blending. Illustrates a **limitation** of the method when the two images have very different lighting/color tones |
 
 Key theoretical observation from testing: Poisson blending only preserves the
 *gradient* of the source, not its absolute color — so (a) the object region

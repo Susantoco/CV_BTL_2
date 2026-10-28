@@ -3,7 +3,7 @@ import os
 import cv2
 import numpy as np
 
-OUT_DIR = os.path.join("data", "gradient_domain", "sample")
+OUT_DIR = os.path.join("data", "gradient_domain", "edgecase")
 H, W = 400, 600
 CENTER = np.array([W // 2, H // 2], dtype=np.float64)
 RADIUS = 70.0
