@@ -9,9 +9,9 @@
     "inliers": 243,
     "inlier_ratio": 0.6694214876033058,
     "reprojection_error_px": 0.0005137695115990937,
-    "detection_time_ms": 203.0316999880597,
-    "matching_time_ms": 10.656099999323487,
-    "homography_time_ms": 2.08309997105971,
+    "detection_time_ms": 222.82190003897995,
+    "matching_time_ms": 11.024200008250773,
+    "homography_time_ms": 1.539000018965453,
     "success": true,
     "error": ""
   },
@@ -25,9 +25,9 @@
     "inliers": 255,
     "inlier_ratio": 0.6836461126005362,
     "reprojection_error_px": 0.00853652972728014,
-    "detection_time_ms": 201.29779999842867,
-    "matching_time_ms": 8.233600005041808,
-    "homography_time_ms": 1.1092000058852136,
+    "detection_time_ms": 228.45950000919402,
+    "matching_time_ms": 8.215899986680597,
+    "homography_time_ms": 2.340500010177493,
     "success": true,
     "error": ""
   }
