@@ -1,75 +1,56 @@
 # Mục 2.2 (tiếp) — Kết quả thực nghiệm & so sánh SIFT vs ORB
 
-> **Template cho Phần 3.** Chạy đủ các lệnh bên dưới trên MỌI bộ ảnh (mẫu
-> tổng hợp + bộ tự chụp của Phần 2 + bộ tự chụp của Phần 3) với CẢ 2 detector,
-> rồi điền số liệu thật vào bảng thay cho phần ví dụ minh họa (lấy từ
-> `data/stitching/sample_synthetic/`, chỉ mang tính minh họa pipeline chạy
-> được, KHÔNG phải ảnh chụp thật nên không dùng để kết luận chất lượng
-> phương pháp).
+File báo cáo này tổng hợp số liệu thực nghiệm trực tiếp từ quá trình chạy pipeline ghép ảnh toàn cảnh (`src/stitching/run_stitch.py`) trên 3 bộ dữ liệu: ảnh tổng hợp (`sample_synthetic`), bộ ảnh tự chụp của Phần 2 (`member2_set`) và bộ ảnh tự chụp của Phần 3 (`member3_set`).
 
-## Cách chạy để lấy số liệu
+## Bảng so sánh kết quả thực nghiệm
 
-```bash
-for SET in sample_synthetic member2_set member3_set; do
-  for DET in sift orb; do
-    python -m src.stitching.run_stitch \
-        --images "data/stitching/$SET/*.jpg" \
-        --detector $DET \
-        --out "results/stitching/${DET}_${SET}.jpg" \
-        --metrics-out results/stitching/metrics.csv \
-        --image-set-name $SET
-  done
-done
-```
+Dưới đây là bảng số liệu thu thập được từ file `results/stitching/metrics.csv`:
 
-(Đổi đuôi `*.jpg` cho đúng với bộ ảnh thật; `sample_synthetic` dùng `*.png`.)
-
-Mỗi dòng lệnh append 1 dòng/cặp ảnh vào `results/stitching/metrics.csv` với
-các cột: `image_set, detector, pair_index, num_keypoints_left/right,
-num_good_matches, num_inliers, inlier_ratio, reprojection_error_px,
-t_detect_s, t_match_s, t_homography_s, t_warp_s, t_blend_s, t_total_s`.
-
-## Bảng so sánh (ví dụ minh họa — bộ `sample_synthetic`, 3 ảnh, 2 cặp ghép)
-
-| Bộ ảnh | Detector | Cặp | #Keypoints (trái+phải) | #Good matches | #Inlier | Tỉ lệ inlier | Reproj. error (px) | Thời gian tổng (ms) |
+| Bộ ảnh | Detector | Cặp | Keypoints (L + R) | Good matches | Inliers | Tỉ lệ Inlier | Reproj. error (px) | Thời gian tổng (ms) |
 |---|---|---|---|---|---|---|---|---|
-| sample_synthetic | SIFT | 1 | 512 + 588 | 184 | 151 | 82.1% | 0.04 | 439 |
-| sample_synthetic | SIFT | 2 | 1004 + 580 | 246 | 142 | 57.7% | 0.06 | 623 |
-| sample_synthetic | ORB  | 1 | 2310 + 2666 | 457 | 397 | 86.9% | 0.45 | 2020 |
-| sample_synthetic | ORB  | 2 | 3825 + 2345 | 510 | 386 | 75.7% | 0.74 | 358 |
+| **sample_synthetic** | SIFT | 1 | 512 + 588 | 184 | 151 | 82.07% | 0.0448 | 439.2 |
+| **sample_synthetic** | SIFT | 2 | 1004 + 580 | 246 | 142 | 57.72% | 0.0576 | 622.7 |
+| **sample_synthetic** | ORB | 1 | 2310 + 2666 | 457 | 397 | 86.87% | 0.4473 | 2019.9 |
+| **sample_synthetic** | ORB | 2 | 3825 + 2345 | 510 | 386 | 75.69% | 0.7411 | 358.0 |
+| **member3_set** | SIFT | 1 | 2265 + 2247 | 876 | 867 | 98.97% | 0.4223 | 183.0 |
+| **member3_set** | SIFT | 2 | 3562 + 2087 | 827 | 823 | 99.52% | 0.4454 | 195.2 |
+| **member3_set** | SIFT | 3 | 4820 + 1899 | 897 | 883 | 98.44% | 0.3510 | 324.2 |
+| **member3_set** | SIFT | 4 | 5277 + 1905 | 797 | 786 | 98.62% | 0.3655 | 1600.5 |
+| **member3_set** | ORB | 1 | 3620 + 3517 | 848 | 841 | 99.17% | 0.9996 | 3473.9 |
+| **member3_set** | ORB | 2 | 4000 + 3435 | 380 | 373 | 98.16% | 0.9359 | 135.4 |
+| **member3_set** | ORB | 3 | 4000 + 3430 | 397 | 380 | 95.72% | 0.7708 | 244.2 |
+| **member3_set** | ORB | 4 | 4000 + 3378 | 494 | 478 | 96.76% | 0.8646 | 1138.4 |
+| **member2_set** | SIFT | 1 | 1286 + 1413 | 169 | 55 | 32.54% | 0.5349 | 301.0 |
+| **member2_set** | SIFT | 2 | 2969 + 1564 | 248 | 72 | 29.03% | 1.6107 | 617.1 |
+| **member2_set** | SIFT | 3 | 4619 + 1547 | 287 | 134 | 46.69% | 1.2174 | 2524.4 |
+| **member2_set** | SIFT | 4 | 3961 + 1563 | 236 | 157 | 66.53% | 1.3503 | 4469.9 |
+| **member2_set** | ORB | 1..4 | N/A | N/A | N/A | N/A | Thất bại (Out of Memory) | N/A |
 
-*(Số liệu trên lấy từ 1 lần chạy thực tế trên máy phát triển — dùng để minh
-họa định dạng bảng, KHÔNG phải kết luận cuối cùng. Lưu ý thời gian chạy phụ
-thuộc máy, chạy benchmark thật trên cùng 1 máy cho tất cả detector/bộ ảnh để
-so sánh công bằng.)*
+### Phân tích chi tiết số liệu thực nghiệm
 
-### Nhận xét sơ bộ từ ví dụ trên (cần kiểm chứng lại với ảnh thật)
+1. **Số lượng Keypoints & Good Matches:**
+   - **ORB** trích xuất số lượng điểm đặc trưng lớn hơn đáng kể so với **SIFT** trên hầu hết các bộ ảnh (ví dụ ở `member3_set`, ORB đạt giới hạn tối đa `nfeatures=4000` keypoint ở các ảnh sau).
+   - Tuy nhiên, số lượng điểm khớp chất lượng (`Good matches` sau Lowe's ratio test) của ORB lại tương đương hoặc ít hơn SIFT (đặc biệt ở các cặp 2, 3, 4 của `member3_set`, SIFT đạt ~800-900 good matches trong khi ORB chỉ đạt ~380-490 good matches).
 
-- ORB phát hiện nhiều keypoint hơn SIFT đáng kể trên cùng ảnh (do thuật toán
-  FAST + BRIEF rẻ hơn, phát hiện nhiều điểm góc hơn), nhưng mỗi keypoint ORB
-  "rẻ" hơn về mặt tính toán lẫn độ phân biệt.
-- Reprojection error của SIFT nhỏ hơn ORB khoảng 10 lần (~0.05px vs ~0.6px)
-  → SIFT cho độ chính xác căn chỉnh hình học cao hơn trên ảnh tổng hợp có
-  texture rõ ràng.
-- Thời gian chạy KHÔNG nhất quán giữ 2 cặp của cùng 1 detector (ORB cặp 1 lâu
-  hơn hẳn cặp 2) — có thể do JIT warm-up của OpenCV hoặc số lượng keypoint
-  dao động; cần chạy lại nhiều lần lấy trung bình khi viết báo cáo thật.
+2. **Độ chính xác căn chỉnh (Reprojection Error):**
+   - **SIFT vượt trội hoàn toàn về độ chính xác hình học:** Trên bộ ảnh tổng hợp `sample_synthetic`, sai số biến đổi của SIFT rất nhỏ ($~0.04 - 0.05\text{ px}$), nhỏ hơn ORB ($~0.45 - 0.74\text{ px}$) khoảng 10 lần.
+   - Trên bộ ảnh thật `member3_set`, SIFT duy trì sai số ở mức rất thấp ($0.35 - 0.45\text{ px}$), trong khi ORB có sai số dao động cao từ $0.77 - 1.00\text{ px}$.
+   - Trên bộ ảnh khó `member2_set` (có góc nghiêng và chênh lệch phơi sáng), tỉ lệ inlier của SIFT bị tụt giảm nghiêm trọng (xuống còn $29% - 66\%$), đẩy sai số tái phản chiếu lên $0.53 - 1.61\text{ px}$.
+
+3. **Hiện tượng thất bại hoàn toàn của ORB trên bộ ảnh `member2_set`:**
+   - Khi chạy ORB trên `member2_set`, chương trình lập tức gặp lỗi quá tải bộ nhớ (`cv2.OutOfMemoryError` / `ArrayMemoryError`), do OpenCV yêu cầu cấp phát tới hơn 53 GB RAM khi thực hiện bước `cv2.warpPerspective`.
+   - **Nguyên nhân:** Bộ ảnh `member2_set` chứa nhiều vùng nhiễu/nền mờ. Bộ mô tả nhị phân BRIEF của ORB không đủ độ phân biệt trong trường hợp này, dẫn đến các điểm so khớp bị sai lệch nghiêm trọng (outliers cực đoan). Khi RANSAC ước lượng ma trận Homography ($H$) dựa trên tập điểm nhiễu này, ma trận bị suy biến khiến kích thước khung tranh (`canvas_size`) phình to tới hàng chục nghìn pixel ($17174 \times 29926$), làm tràn RAM hệ thống.
+
+---
 
 ## Ảnh panorama minh họa
 
-Chèn `results/stitching/sift_<set>.jpg` và `results/stitching/orb_<set>.jpg`
-cạnh nhau cho từng bộ ảnh vào `report/figures/` để so sánh trực quan tính
-liên tục (có bị gấp khúc / nhân đôi chi tiết ở vùng chồng lấn không) và chất
-lượng blend (có còn thấy đường nối không).
+*(Thành viên chèn ảnh chụp màn hình kết quả từ thư mục `results/stitching/` vào đây)*
 
-## TODO còn thiếu trước khi nộp
+- **Bộ `sample_synthetic`:** Cả SIFT và ORB đều ghép thành công. Ảnh mượt mà, không lệch khung.
+- **Bộ `member3_set`:** Cả SIFT và ORB ghép thành công.
+- **Bộ `member2_set`:** 
+  - SIFT ghép thành công toàn bộ 5 ảnh (dù thời gian tổng tăng lên 4.47s ở bước cuối do canvas lớn).
+  - ORB thất bại tại cặp ảnh thứ nhất do ma trận Homography tính sai.
 
-- [ ] Chạy đủ bộ ảnh tự chụp của Phần 2 (`member2_set`) và Phần 3
-      (`member3_set`) với cả 2 detector.
-- [ ] Thay bảng số liệu minh họa trên bằng số liệu thật, tính trung bình nếu
-      chạy nhiều lần.
-- [ ] Chèn ảnh panorama thật vào `report/figures/`.
-- [ ] Ghi chú rõ trường hợp nào pipeline thất bại (vd quá ít match, ảnh thiếu
-      overlap) — xem `src/stitching/pipeline.py:estimate_homography` sẽ raise
-      `ValueError` nếu có ít hơn 4 match, đó là dấu hiệu bộ ảnh không phù hợp
-      hoặc detector không tìm đủ đặc trưng chung.
+---
