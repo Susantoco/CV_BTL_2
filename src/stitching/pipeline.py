@@ -142,7 +142,7 @@ def calculate_pair_metrics(
         )
         ratio = inliers / len(matches) if matches else 0.0
 
-        success = (
+        success = bool(
             H is not None
             and inliers >= 4
             and np.isfinite(reprojection_error)
@@ -235,7 +235,7 @@ def warp_and_blend(images, transforms):
     return panorama
 
 
-def stitch_images(image_paths: list[Path], detector_name: str):
+def stitch_images(image_paths: list[Path], detector_name: str, *, return_timing=False):
     if len(image_paths) < 2:
         raise ValueError("At least two images are required.")
 
@@ -260,5 +260,12 @@ def stitch_images(image_paths: list[Path], detector_name: str):
         ]
         raise RuntimeError("Unable to register all consecutive image pairs: " + ", ".join(failed))
 
+    start = perf_counter()
     panorama = warp_and_blend(images, transforms)
+    stitching_time_ms = (perf_counter() - start) * 1000
+    if return_timing:
+        return panorama, metrics, {
+            "detection_time_ms": sum(detection_times),
+            "stitching_time_ms": stitching_time_ms,
+        }
     return panorama, metrics

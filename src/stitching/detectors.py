@@ -57,9 +57,7 @@ def create_detector(name: str) -> DetectorConfig:
             ratio_threshold=0.75,
         )
 
-    raise ValueError(
-        f"Unsupported detector: {name}. Choose sift, orb, or surf."
-    )
+    raise ValueError(f"Unsupported detector: {name}. Choose sift, orb, or surf.")
 
 
 def available_detectors() -> list[str]:

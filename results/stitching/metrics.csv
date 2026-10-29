@@ -1,0 +1,2 @@
+image_set,detector,image_count,pair_count,keypoint_count,match_count,inlier_count,inlier_ratio,reprojection_error_px,detection_time_ms,matching_time_ms,homography_time_ms,stitching_time_ms,total_time_ms,success
+data\stitching\sample_synthetic,sift,3,2,2224,736,498,0.6766304347826086,0.0046218093810743285,304.5414999942295,18.889700004365295,3.1922999769449234,273.64359999774024,600.26709997328,True
