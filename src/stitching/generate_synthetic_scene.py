@@ -1,73 +1,92 @@
-"""
-Sinh bo anh tong hop nhieu goc nhin tu 1 "canh" lon, dung de validate pipeline
-stitching (detect -> match -> homography -> warp -> blend) chay dung truoc
-khi co anh chup that. Chay 1 lan:
+"""Generate a reproducible synthetic scene with overlapping views."""
 
-    python -m src.stitching.generate_synthetic_scene
-
-Luu y QUAN TRONG: day chi la cac crop chong lan tu cung 1 anh (tuong duong
-dich chuyen ngang thuan tuy, KHONG mo phong goc xoay camera that nhu de bai
-yeu cau "cung vi tri quan sat, cac goc xoay khac nhau"). Muc dich DUY NHAT la
-kiem tra code chay dung ve mat ky thuat (sinh homography, warp, blend khong
-loi) khi chua co anh thuc nghiem that - KHONG thay the cho bo anh tu chup
-(--images data/stitching/member2_set, member3_set).
-"""
-import os
+import argparse
+from pathlib import Path
 
 import cv2
 import numpy as np
 
-OUT_DIR = os.path.join("data", "stitching", "sample_synthetic")
-SCENE_H, SCENE_W = 900, 2200
-VIEW_W = 900
-OVERLAP_RATIO = 0.35
 
+def generate_scene(seed: int = 42):
+    rng = np.random.default_rng(seed)
 
-def make_scene():
-    rng = np.random.default_rng(42)
-    scene = np.full((SCENE_H, SCENE_W, 3), 230, dtype=np.uint8)
+    width, height = 1500, 520
+    scene = np.full((height, width, 3), 235, dtype=np.uint8)
 
-    # Nen checker nhat de co nhieu goc/canh cho detector bam vao.
-    step = 40
-    for y in range(0, SCENE_H, step):
-        for x in range(0, SCENE_W, step):
-            if (x // step + y // step) % 2 == 0:
-                scene[y:y + step, x:x + step] = (215, 215, 215)
+    # Background grid provides additional spatial structure.
+    for x in range(0, width, 40):
+        cv2.line(scene, (x, 0), (x, height), (215, 215, 215), 1)
 
-    # Rai cac hinh ngau nhien (circle/rectangle/line) voi mau/kich thuoc khac
-    # nhau de tao nhieu dac trung cuc bo doc nhat, de SIFT/ORB bam vao.
-    for _ in range(220):
-        shape = rng.integers(0, 3)
-        color = tuple(int(c) for c in rng.integers(0, 255, size=3))
-        cx, cy = int(rng.integers(20, SCENE_W - 20)), int(rng.integers(20, SCENE_H - 20))
-        if shape == 0:
-            cv2.circle(scene, (cx, cy), int(rng.integers(5, 18)), color, -1, cv2.LINE_AA)
-        elif shape == 1:
-            s = int(rng.integers(8, 24))
-            cv2.rectangle(scene, (cx - s, cy - s), (cx + s, cy + s), color, -1)
+    for y in range(0, height, 40):
+        cv2.line(scene, (0, y), (width, y), (215, 215, 215), 1)
+
+    # Random shapes and labels create repeatable visual features.
+    for i in range(180):
+        x = int(rng.integers(20, width - 20))
+        y = int(rng.integers(20, height - 20))
+        color = tuple(int(v) for v in rng.integers(20, 220, size=3))
+        radius = int(rng.integers(4, 17))
+
+        if i % 3 == 0:
+            cv2.circle(scene, (x, y), radius, color, -1)
+        elif i % 3 == 1:
+            cv2.rectangle(
+                scene,
+                (x - radius, y - radius),
+                (x + radius, y + radius),
+                color,
+                -1,
+            )
         else:
-            angle = rng.uniform(0, 2 * np.pi)
-            length = int(rng.integers(15, 40))
-            p2 = (int(cx + length * np.cos(angle)), int(cy + length * np.sin(angle)))
-            cv2.line(scene, (cx, cy), p2, color, 2, cv2.LINE_AA)
+            cv2.line(
+                scene,
+                (x - radius, y - radius),
+                (x + radius, y + radius),
+                color,
+                3,
+            )
 
-    noise = rng.normal(0, 6, size=scene.shape)
-    return np.clip(scene.astype(np.float64) + noise, 0, 255).astype(np.uint8)
+    for x in range(50, width - 150, 180):
+        cv2.putText(
+            scene,
+            f"FEATURE {x}",
+            (x, 250),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.8,
+            (20, 20, 20),
+            2,
+            cv2.LINE_AA,
+        )
+
+    return scene
 
 
 def main():
-    os.makedirs(OUT_DIR, exist_ok=True)
-    scene = make_scene()
-    stride = int(VIEW_W * (1 - OVERLAP_RATIO))
-    x_starts = list(range(0, SCENE_W - VIEW_W + 1, stride))
-    for i, x0 in enumerate(x_starts):
-        view = scene[:, x0:x0 + VIEW_W]
-        path = os.path.join(OUT_DIR, f"view_{i}.png")
-        cv2.imwrite(path, view)
-        print(f"Da luu: {path}")
-    print(f"Tong cong {len(x_starts)} goc nhin, overlap ~{OVERLAP_RATIO * 100:.0f}%")
-    print("Chay thu: python -m src.stitching.run_stitch "
-          f'--images "{OUT_DIR}/*.png" --detector sift --out results/stitching/sift_synthetic.jpg')
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=Path("data/stitching/sample_synthetic"),
+    )
+    parser.add_argument("--seed", type=int, default=42)
+    args = parser.parse_args()
+
+    args.output_dir.mkdir(parents=True, exist_ok=True)
+    scene = generate_scene(args.seed)
+
+    view_width = 700
+    starts = [0, 400, 800]
+
+    for index, start in enumerate(starts, start=1):
+        view = scene[:, start:start + view_width]
+        output = args.output_dir / f"{index:02d}.png"
+
+        if not cv2.imwrite(str(output), view):
+            raise RuntimeError(f"Failed to write {output}")
+
+        print(f"Saved {output}")
+
+    print("Synthetic image generation complete.")
 
 
 if __name__ == "__main__":

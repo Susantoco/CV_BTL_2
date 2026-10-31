@@ -1,30 +1,56 @@
-"""
-Thu thap/ghi so lieu so sanh giua cac phuong phap trich xuat dac trung
-(so keypoint, so match, ty le inlier, reprojection error, thoi gian tung
-buoc), dung cho bang so sanh o muc 2.2 bao cao (Phan 3 phu trach tong hop).
-"""
-import csv
-import os
+"""Metrics for evaluating image stitching."""
 
-FIELDNAMES = [
-    "image_set", "detector", "pair_index",
-    "num_keypoints_left", "num_keypoints_right",
-    "num_good_matches", "num_inliers", "inlier_ratio",
-    "reprojection_error_px",
-    "t_detect_s", "t_match_s", "t_homography_s", "t_warp_s", "t_blend_s", "t_total_s",
-]
+from dataclasses import asdict, dataclass
+import json
+from pathlib import Path
 
 
-def append_metrics_csv(csv_path, image_set_name, metrics_list):
-    """Append moi metrics (1 dict / cap anh) thanh 1 dong vao CSV. Tao file +
-    header neu chua ton tai, cho phep goi nhieu lan voi cac detector/bo anh
-    khac nhau roi gop lai thanh 1 bang duy nhat."""
-    os.makedirs(os.path.dirname(csv_path) or ".", exist_ok=True)
-    file_exists = os.path.isfile(csv_path)
-    with open(csv_path, "a", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=FIELDNAMES)
-        if not file_exists:
-            writer.writeheader()
-        for m in metrics_list:
-            row = {"image_set": image_set_name, **m}
-            writer.writerow({k: row.get(k, "") for k in FIELDNAMES})
+@dataclass
+class PairMetrics:
+    image_a: str
+    image_b: str
+    detector: str
+    keypoints_a: int
+    keypoints_b: int
+    tentative_matches: int
+    inliers: int
+    inlier_ratio: float
+    reprojection_error_px: float
+    detection_time_ms: float
+    matching_time_ms: float
+    homography_time_ms: float
+    success: bool
+    error: str = ""
+
+
+def save_metrics(metrics: list[PairMetrics], output_path: Path) -> None:
+    """Save pairwise metrics as a JSON file."""
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with output_path.open("w", encoding="utf-8") as file:
+        json.dump(
+            [asdict(item) for item in metrics],
+            file,
+            indent=2,
+            ensure_ascii=False,
+        )
+
+
+def print_metrics(metrics: list[PairMetrics]) -> None:
+    """Print a compact summary for every image pair."""
+    for item in metrics:
+        print(f"\n{item.image_a} -> {item.image_b}")
+        print(f"  Detector:       {item.detector}")
+        print(f"  Keypoints:      {item.keypoints_a} / {item.keypoints_b}")
+        print(f"  Matches:        {item.tentative_matches}")
+        print(f"  Inliers:        {item.inliers}")
+        print(f"  Inlier ratio:   {item.inlier_ratio:.3f}")
+        print(f"  Reprojection:   {item.reprojection_error_px:.3f} px")
+        print(
+            "  Time:           "
+            f"{item.detection_time_ms + item.matching_time_ms + item.homography_time_ms:.2f} ms"
+        )
+        print(f"  Success:        {item.success}")
+
+        if item.error:
+            print(f"  Error:          {item.error}")
